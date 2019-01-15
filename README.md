@@ -159,7 +159,7 @@ In near future these features will be added:
  4. Client code in python/go
  5. UDP Socket ??
  6. Logger
- 7. Config to create default set of shells
+~~7. Config to create default set of shells~~
  8. Monitor Shells and respawn if needed
  9. Steps to keepalive shells (so that they don't terminate due to inactivity)
 10. Create pseudo-TTY for shells (for shells that require a TTY)
