@@ -12,9 +12,10 @@ import (
 
 var (
 	router                  = mux.NewRouter()
-	DEFAULT_CMD_TIMEOUT     = 1000 //1 second
+	DEFAULT_CMD_TIMEOUT     = uint(1000) //1000 ms
 	DEFAULT_LOG_LEVEL       = zerolog.ErrorLevel
-	DEFAULT_LOG_DESTINATION = "stdout" // can be "stderr"/"stdout"/fill path to a file
+	DEFAULT_LOG_DESTINATION = "stdout"   // can be "stderr"/"stdout"/fill path to a file
+	DEFAULT_READ_BUFSIZE    = uint(1024) // in bytes
 	logger                  = zerolog.New(os.Stdout).Level(zerolog.ErrorLevel).With().Timestamp().Logger()
 )
 
@@ -30,9 +31,10 @@ type activeShell struct {
 	cmdObj     *exec.Cmd
 
 	//Input Params
-	endPattern string
-	cmdTimeout int
-	shellExe   string
+	endPattern  string
+	cmdTimeout  uint
+	shellExe    string
+	readBufSize uint
 }
 
 var allShells []*activeShell

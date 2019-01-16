@@ -34,7 +34,7 @@ func executeCmd(w http.ResponseWriter, r *http.Request) {
 	type execReq struct {
 		Cmd        string `json:"command"`
 		EndPattern string `json:"terminatePattern,omitempty"`
-		CmdTimeout int    `json:"commanTimeout,omitempty"`
+		CmdTimeout uint   `json:"commandTimeout,omitempty"`
 	}
 
 	type execResp struct {
@@ -68,6 +68,7 @@ func executeCmd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Debug().Int("ShellId", shlId).Str("Cmd", req.Cmd).Msg("Executing Cmd in Shell.")
+	startTime := time.Now()
 	var resp execResp
 	reqShl.sin <- req.Cmd
 	endCmd := false
@@ -94,6 +95,12 @@ func executeCmd(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	elapsed := time.Now().Sub(startTime)
+	logger.Debug().Str("Cmd", req.Cmd).
+		Int("StdoutSize", len(resp.Output)).
+		Int("StderrSize", len(resp.Error)).
+		Int64("TookNs", elapsed.Nanoseconds()).
+		Msg("Completed Command")
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)

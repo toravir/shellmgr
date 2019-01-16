@@ -33,9 +33,10 @@ Use this API to create a new Shell - shellMgr will return a shell-Id - using whi
 ```
 POST /newShell
 {
-"shell" : "/bin/bash"
-"commandTimeout" : 1000,
-"terminatePattern" : "qqqqqq"
+"shell"                 : "/bin/bash"
+"commandTimeout"        : 1000,
+"terminatePattern"      : "qqqqqq",
+"readBufSize"           : 10240
 }
 ```
 
@@ -45,15 +46,17 @@ Parameters for new Shell creation:
 `shell` (string) - Executable to run to get the shell running - use absolute path
 
 `commandTimeout` (+ve number) - Max time to wait for the command to complete - this is a default value - can be overridden for each command - timeout is specified in milli
-seconds to wait
+seconds to wait. Default value is 1000 ms.
 
 `terminatePattern` (string) - This is a pattern that shell manager will use to determine if all the output for a command is printed or not - if this pattern is seen, shell
 Mgr assumes all the output has been printed out - or else it will wait for the `commandTimeout` - this can be overridden for each command.
 
+`readBufSize` (+ve number) - This parameter sets size of the buffer in bytes used for reads. Too small will result in lots of cpu, too high will result in large memory consumption. Default value is 1024 bytes.
+
 Examples:
 ```
 curl -H 'Content-Type: application/json' http://localhost:12345/newShell \
--d '{"shell":"/bin/bash", "commandTimeout": 1000, "terminatePattern":"qqqq"}'
+-d '{"shell":"/bin/bash", "commandTimeout": 1000, "terminatePattern":"qqqq", "readBufSize":10240}'
 ```
 
 **RESPONSE**
@@ -138,6 +141,7 @@ curl -X GET -H 'Content-Type: application/json' http://localhost:12345/listShell
       "status" : "running",
       "shell" : "/bin/bash",
       "shellId" : 1,
+      "readBufSize": 10240,
       "error" : ""
    },
    {
@@ -146,6 +150,7 @@ curl -X GET -H 'Content-Type: application/json' http://localhost:12345/listShell
       "shell" : "/bin/zsh",
       "status" : "Exited",
       "cmdTimeout" : 1000,
+      "readBufSize": 1024,
       "terminatePattern" : "qqqq"
    }
 ]

@@ -43,22 +43,6 @@ func ParseCmdLineArgs() (stype, saddr string) {
 	}
 
 	if cfg != nil {
-		shellsCfg := cfg.Section("bootup_shells")
-		chSections := shellsCfg.ChildSections()
-		for _, sh := range chSections {
-			shlId, _ := sh.Key("shellid").Int()
-			shellExe := sh.Key("shellexe").String()
-			endPattern := sh.Key("terminatepattern").String()
-			cmdTimeout, _ := sh.Key("cmdtimeout").Int()
-			if cmdTimeout <= 0 {
-				logger.Debug().Msgf("Invalid Cmd Timeout specified: %d, using Default(1s)", cmdTimeout)
-				cmdTimeout = DEFAULT_CMD_TIMEOUT
-			}
-			err := spawnShell(shlId, shellExe, endPattern, cmdTimeout)
-			if err != nil {
-				logger.Debug().Int("ShellId", shlId).AnErr("Error", err).Msg("Error creating Bootup shell")
-			}
-		}
 		logCfg := cfg.Section("shellmgr_logger")
 		logLevelCfg := logCfg.Key("level").String()
 		logDestCfg := logCfg.Key("destination").String()
@@ -86,6 +70,27 @@ func ParseCmdLineArgs() (stype, saddr string) {
 			}
 		}
 		logger = zerolog.New(logDest).Level(logLevel).With().Timestamp().Logger()
+		shellsCfg := cfg.Section("bootup_shells")
+		chSections := shellsCfg.ChildSections()
+		for _, sh := range chSections {
+			shlId, _ := sh.Key("shellid").Int()
+			shellExe := sh.Key("shellexe").String()
+			endPattern := sh.Key("terminatepattern").String()
+			cmdTimeout, _ := sh.Key("cmdtimeout").Uint()
+			readBufSize, _ := sh.Key("readbufsize").Uint()
+			if cmdTimeout <= 0 {
+				logger.Debug().Msgf("Invalid Cmd Timeout specified: %d, using Default(1s)", cmdTimeout)
+				cmdTimeout = DEFAULT_CMD_TIMEOUT
+			}
+			if readBufSize <= 0 {
+				logger.Debug().Msgf("Invalid readBufSize specified: %d, using Default(1024bytes)", readBufSize)
+				readBufSize = DEFAULT_READ_BUFSIZE
+			}
+			err := spawnShell(shlId, shellExe, endPattern, cmdTimeout, readBufSize)
+			if err != nil {
+				logger.Debug().Int("ShellId", shlId).AnErr("Error", err).Msg("Error creating Bootup shell")
+			}
+		}
 	}
 	return stype, saddr
 }

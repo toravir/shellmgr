@@ -7,22 +7,27 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"strings"
 )
 
-func relayPipe2Chan(pipe io.ReadCloser, out chan<- string) {
+func relayPipe2Chan(pipe io.ReadCloser, out chan<- string, bufSize uint) {
+	logger.Debug().Msg("Started relayPipe2Chan.")
+        lastRead := make([]byte, bufSize)
 	for {
-		lastRead := make([]byte, 100)
-		n, _ := pipe.Read(lastRead)
+		n, err := pipe.Read(lastRead)
 		if n > 0 {
 			out <- string(lastRead[:n])
 		} else {
-			logger.Debug().Msg("relayPipe2Chan Exiting...")
-			return
+			if err != nil {
+				logger.Debug().AnErr("Error:", err).Msg("relayPipe2Chan Exiting...")
+				return
+			}
 		}
 	}
 }
 
 func relayChan2Pipe(pipe io.WriteCloser, in <-chan string, exitCh <-chan bool) {
+	logger.Debug().Msg("Started relayChan2Pipe.")
 	for {
 		select {
 		case toWrite := <-in:
@@ -43,21 +48,27 @@ func monitorShell(shl *activeShell) {
 	}
 }
 
-func spawnShell(shlId int, shellExe string, endPattern string, cmdTimeout int) error {
+func spawnShell(shlId int, shellExe string, endPattern string, cmdTimeout uint, readBufSize uint) error {
 	for _, v := range allShells {
 		if v.shellId == shlId {
 			return fmt.Errorf("Shell Id of %d is already used up..", shlId)
 		}
 	}
 	newShell := activeShell{shellId: shlId,
-		shellExe:   shellExe,
-		endPattern: endPattern,
-		cmdTimeout: cmdTimeout,
-		terminated: false}
+		shellExe:    shellExe,
+		endPattern:  endPattern,
+		cmdTimeout:  cmdTimeout,
+		readBufSize: readBufSize,
+		terminated:  false}
 
 	allShells = append(allShells, &newShell)
 
-	cmd := exec.Command(shellExe)
+	execArgs := []string{shellExe}
+	if strings.ContainsAny(shellExe, " ") {
+		execArgs = strings.Split(shellExe, " ")
+	}
+
+	cmd := exec.Command(execArgs[0], execArgs[1:]...)
 
 	newShell.sin = make(chan string, 1)
 	newShell.sout = make(chan string, 1)
@@ -76,8 +87,8 @@ func spawnShell(shlId int, shellExe string, endPattern string, cmdTimeout int) e
 		return err
 	}
 
-	go relayPipe2Chan(outp, newShell.sout)
-	go relayPipe2Chan(errp, newShell.serr)
+	go relayPipe2Chan(outp, newShell.sout, newShell.readBufSize)
+	go relayPipe2Chan(errp, newShell.serr, newShell.readBufSize)
 	go relayChan2Pipe(inp, newShell.sin, newShell.exitCh)
 	go monitorShell(&newShell)
 
@@ -88,9 +99,10 @@ func spawnShell(shlId int, shellExe string, endPattern string, cmdTimeout int) e
 func createShell(w http.ResponseWriter, r *http.Request) {
 
 	type createReq struct {
-		ShellExe   string `json:"shell"`
-		EndPattern string `json:"terminatePattern,omitempty"`
-		CmdTimeout int    `json:"commandTimeout,omitempty"`
+		ShellExe    string `json:"shell"`
+		EndPattern  string `json:"terminatePattern,omitempty"`
+		CmdTimeout  uint   `json:"commandTimeout,omitempty"`
+		ReadBufSize uint   `json:"readBufSize,omitempty"`
 	}
 
 	type createResp struct {
@@ -127,7 +139,12 @@ func createShell(w http.ResponseWriter, r *http.Request) {
 		req.CmdTimeout = DEFAULT_CMD_TIMEOUT
 	}
 
-	err = spawnShell(shlId, req.ShellExe, req.EndPattern, req.CmdTimeout)
+	if req.ReadBufSize <= 0 {
+		//If not specified or -ve, use default
+		req.ReadBufSize = DEFAULT_READ_BUFSIZE
+	}
+
+	err = spawnShell(shlId, req.ShellExe, req.EndPattern, req.CmdTimeout, req.ReadBufSize)
 
 	var resp createResp
 	resp.ShellId = shlId

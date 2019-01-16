@@ -7,12 +7,13 @@ import (
 
 func listShells(w http.ResponseWriter, r *http.Request) {
 	type listResp struct {
-		ShellId    int    `json:"shellId"`
-		Error      string `json:"error"`
-		Status     string `json:"status"`
-		ShellExe   string `json:"shell"`
-		EndPattern string `json:"terminatePattern"`
-		CmdTimeout int    `json:"cmdTimeout"`
+		ShellId     int    `json:"shellId"`
+		Error       string `json:"error"`
+		Status      string `json:"status"`
+		ShellExe    string `json:"shell"`
+		EndPattern  string `json:"terminatePattern"`
+		CmdTimeout  uint   `json:"cmdTimeout"`
+		ReadBufSize uint   `json:"readBufSize"`
 	}
 
 	shlList := make([]listResp, len(allShells))
@@ -28,6 +29,7 @@ func listShells(w http.ResponseWriter, r *http.Request) {
 		shlList[i].ShellExe = shl.shellExe
 		shlList[i].EndPattern = shl.endPattern
 		shlList[i].CmdTimeout = shl.cmdTimeout
+		shlList[i].ReadBufSize = shl.readBufSize
 	}
 	respStatus := http.StatusOK
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
