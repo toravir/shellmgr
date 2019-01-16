@@ -2,7 +2,6 @@ package shlmgr
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
         "net/http"
         "io"
@@ -26,10 +25,11 @@ func executeCmd(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if reqShl == nil || reqShl.terminated {
+                logger.Debug().Int("ShellId", shlId).Msg("Shell Exited or Not found")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	fmt.Println("exec: shl", reqShl)
+        logger.Debug().Int("ShellId", shlId).Msg("Shell Found")
 
 	type execReq struct {
 		Cmd        string `json:"command"`
@@ -67,21 +67,18 @@ func executeCmd(w http.ResponseWriter, r *http.Request) {
 		cmdTimeout = req.CmdTimeout
 	}
 
-	fmt.Println("exec: req", req)
+        logger.Debug().Int("ShellId", shlId).Str("Cmd", req.Cmd).Msg("Executing Cmd in Shell.")
 	var resp execResp
 	reqShl.sin <- req.Cmd
 	endCmd := false
 
 	for {
-		fmt.Println("exec: resp", resp)
 		select {
 		case out := <-reqShl.sout:
 			resp.Output += string(out)
-			fmt.Println("current resp.Output:", resp.Output)
 			if endPattern != "" {
-				fmt.Println("Looking for endPattern:", endPattern)
 				if strings.HasSuffix(resp.Output, endPattern) {
-					fmt.Println("endPattern FOUND!!")
+                                        logger.Debug().Str("Cmd", req.Cmd).Msg("EndPattern Found")
 					endCmd = true
 					break
 				}

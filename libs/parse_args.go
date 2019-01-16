@@ -2,10 +2,10 @@ package shlmgr
 
 import (
 	"flag"
-	"fmt"
 	"github.com/go-ini/ini"
         "os"
         "log"
+        "github.com/rs/zerolog"
 )
 
 func ParseCmdLineArgs() (stype, saddr string) {
@@ -25,8 +25,7 @@ func ParseCmdLineArgs() (stype, saddr string) {
 		var err error
 		cfg, err = ini.Load(*config)
 		if err != nil {
-			fmt.Println("Cannot load Config file:!!", err)
-			os.Exit(1)
+			log.Fatal("Cannot load Config file:!!", err)
 		}
 		globalCfg := cfg.Section("global")
 		stype = globalCfg.Key("socket.type").String()
@@ -52,14 +51,41 @@ func ParseCmdLineArgs() (stype, saddr string) {
 			endPattern := sh.Key("terminatepattern").String()
 			cmdTimeout, _ := sh.Key("cmdtimeout").Int()
 			if cmdTimeout <= 0 {
-				fmt.Println("Invalid Cmd Timeout specified:", cmdTimeout, ", using Default(1s)")
+                                logger.Debug().Msgf("Invalid Cmd Timeout specified: %d, using Default(1s)", cmdTimeout)
 				cmdTimeout = DEFAULT_CMD_TIMEOUT
 			}
 			err := spawnShell(shlId, shellExe, endPattern, cmdTimeout)
 			if err != nil {
-				fmt.Println("Error creating bootup shell", sh, ", Error:", err)
+                            logger.Debug().Int("ShellId", shlId).AnErr("Error", err).Msg("Error creating Bootup shell")
 			}
 		}
+                logCfg := cfg.Section("shellmgr_logger")
+                logLevelCfg := logCfg.Key("level").String()
+                logDestCfg := logCfg.Key("destination").String()
+                logLevel := DEFAULT_LOG_LEVEL
+                if logLevelCfg != "" {
+                    var err error
+                    logLevel, err = zerolog.ParseLevel(logLevelCfg)
+                    if err != nil {
+                        //Invalid LoglevelCfg - so use default log level
+                        logLevel = DEFAULT_LOG_LEVEL
+                    }
+                }
+                logDest := os.Stdout
+                switch logDestCfg {
+                case "":
+                    fallthrough
+                case "<stdout>":
+                    break
+                case "<stderr>":
+                    logDest = os.Stderr
+                default:
+                    fil, err := os.Create(logDestCfg)
+                    if err == nil {
+                        logDest = fil
+                    }
+                }
+                logger = zerolog.New(logDest).Level(logLevel).With().Timestamp().Logger()
 	}
 	return stype, saddr
 }

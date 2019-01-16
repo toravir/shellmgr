@@ -2,7 +2,6 @@ package shlmgr
 
 import (
 	"encoding/json"
-	"fmt"
         "net/http"
 )
 
@@ -29,8 +28,6 @@ func listShells(w http.ResponseWriter, r *http.Request) {
 		shlList[i].ShellExe = shl.shellExe
 		shlList[i].EndPattern = shl.endPattern
 		shlList[i].CmdTimeout = shl.cmdTimeout
-		fmt.Printf("%+v\n", shlList[i])
-		fmt.Printf("%+v\n", shl)
 	}
 	respStatus := http.StatusOK
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
