@@ -2,11 +2,11 @@ package shlmgr
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-        "os/exec"
-        "net/http"
 	"io/ioutil"
-        "fmt"
+	"net/http"
+	"os/exec"
 )
 
 func relayPipe2Chan(pipe io.ReadCloser, out chan<- string) {
@@ -16,7 +16,7 @@ func relayPipe2Chan(pipe io.ReadCloser, out chan<- string) {
 		if n > 0 {
 			out <- string(lastRead[:n])
 		} else {
-                        logger.Debug().Msg("relayPipe2Chan Exiting...")
+			logger.Debug().Msg("relayPipe2Chan Exiting...")
 			return
 		}
 	}
@@ -28,7 +28,7 @@ func relayChan2Pipe(pipe io.WriteCloser, in <-chan string, exitCh <-chan bool) {
 		case toWrite := <-in:
 			pipe.Write([]byte(toWrite))
 		case <-exitCh:
-                        logger.Debug().Msg("relayChan2Pipe Exiting...")
+			logger.Debug().Msg("relayChan2Pipe Exiting...")
 			return
 		}
 	}
@@ -37,7 +37,7 @@ func relayChan2Pipe(pipe io.WriteCloser, in <-chan string, exitCh <-chan bool) {
 func monitorShell(shl *activeShell) {
 	if shl.cmdObj != nil {
 		shl.exitErr = shl.cmdObj.Wait()
-                logger.Debug().AnErr("Error", shl.exitErr).Msg("monitorShell Exiting.")
+		logger.Debug().AnErr("Error", shl.exitErr).Msg("monitorShell Exiting.")
 		shl.terminated = true
 		shl.exitCh <- true
 	}
@@ -81,7 +81,7 @@ func spawnShell(shlId int, shellExe string, endPattern string, cmdTimeout int) e
 	go relayChan2Pipe(inp, newShell.sin, newShell.exitCh)
 	go monitorShell(&newShell)
 
-        logger.Debug().Int("ShellId", shlId).Msg("Created New Shell")
+	logger.Debug().Int("ShellId", shlId).Msg("Created New Shell")
 	return nil
 }
 

@@ -2,7 +2,7 @@ package shlmgr
 
 import (
 	"encoding/json"
-        "net/http"
+	"net/http"
 )
 
 func listShells(w http.ResponseWriter, r *http.Request) {

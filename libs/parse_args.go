@@ -3,9 +3,9 @@ package shlmgr
 import (
 	"flag"
 	"github.com/go-ini/ini"
-        "os"
-        "log"
-        "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
+	"log"
+	"os"
 )
 
 func ParseCmdLineArgs() (stype, saddr string) {
@@ -51,41 +51,41 @@ func ParseCmdLineArgs() (stype, saddr string) {
 			endPattern := sh.Key("terminatepattern").String()
 			cmdTimeout, _ := sh.Key("cmdtimeout").Int()
 			if cmdTimeout <= 0 {
-                                logger.Debug().Msgf("Invalid Cmd Timeout specified: %d, using Default(1s)", cmdTimeout)
+				logger.Debug().Msgf("Invalid Cmd Timeout specified: %d, using Default(1s)", cmdTimeout)
 				cmdTimeout = DEFAULT_CMD_TIMEOUT
 			}
 			err := spawnShell(shlId, shellExe, endPattern, cmdTimeout)
 			if err != nil {
-                            logger.Debug().Int("ShellId", shlId).AnErr("Error", err).Msg("Error creating Bootup shell")
+				logger.Debug().Int("ShellId", shlId).AnErr("Error", err).Msg("Error creating Bootup shell")
 			}
 		}
-                logCfg := cfg.Section("shellmgr_logger")
-                logLevelCfg := logCfg.Key("level").String()
-                logDestCfg := logCfg.Key("destination").String()
-                logLevel := DEFAULT_LOG_LEVEL
-                if logLevelCfg != "" {
-                    var err error
-                    logLevel, err = zerolog.ParseLevel(logLevelCfg)
-                    if err != nil {
-                        //Invalid LoglevelCfg - so use default log level
-                        logLevel = DEFAULT_LOG_LEVEL
-                    }
-                }
-                logDest := os.Stdout
-                switch logDestCfg {
-                case "":
-                    fallthrough
-                case "<stdout>":
-                    break
-                case "<stderr>":
-                    logDest = os.Stderr
-                default:
-                    fil, err := os.Create(logDestCfg)
-                    if err == nil {
-                        logDest = fil
-                    }
-                }
-                logger = zerolog.New(logDest).Level(logLevel).With().Timestamp().Logger()
+		logCfg := cfg.Section("shellmgr_logger")
+		logLevelCfg := logCfg.Key("level").String()
+		logDestCfg := logCfg.Key("destination").String()
+		logLevel := DEFAULT_LOG_LEVEL
+		if logLevelCfg != "" {
+			var err error
+			logLevel, err = zerolog.ParseLevel(logLevelCfg)
+			if err != nil {
+				//Invalid LoglevelCfg - so use default log level
+				logLevel = DEFAULT_LOG_LEVEL
+			}
+		}
+		logDest := os.Stdout
+		switch logDestCfg {
+		case "":
+			fallthrough
+		case "<stdout>":
+			break
+		case "<stderr>":
+			logDest = os.Stderr
+		default:
+			fil, err := os.Create(logDestCfg)
+			if err == nil {
+				logDest = fil
+			}
+		}
+		logger = zerolog.New(logDest).Level(logLevel).With().Timestamp().Logger()
 	}
 	return stype, saddr
 }
